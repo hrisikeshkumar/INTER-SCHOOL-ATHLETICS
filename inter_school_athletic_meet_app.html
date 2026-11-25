@@ -1,0 +1,2396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Athletics Meet Pro — Inter-School Championship</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Inter & Barlow Condensed for athletic headers -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior-y: contain;
+    }
+    .font-sport {
+      font-family: 'Barlow Condensed', sans-serif;
+      letter-spacing: 0.02em;
+    }
+    /* Hide scrollbars on horizontal pill strips */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* Safe bottom padding for mobile bottom nav */
+    .pb-safe {
+      padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+    }
+    .bottom-nav-safe {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.25); }
+    }
+    .live-dot {
+      animation: pulseDot 1.6s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col select-none sm:select-auto">
+
+  <!-- ==================== TOP APP BAR (ANDROID MATERIAL STYLE) ==================== -->
+  <header class="sticky top-0 z-30 bg-slate-900 text-white shadow-md">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-slate-950 shadow-inner shrink-0">
+          <i data-lucide="trophy" class="w-6 h-6 stroke-[2.5]"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 id="headerMeetTitle" class="font-sport text-xl sm:text-2xl font-extrabold uppercase tracking-wide leading-none text-white">
+              INTER-SCHOOL ATHLETICS
+            </h1>
+            <span id="syncStatusBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 live-dot"></span>
+              <span id="syncStatusText">LIVE SYNC</span>
+            </span>
+          </div>
+          <p id="headerMeetSubtitle" class="text-xs text-slate-400 mt-0.5 truncate max-w-[210px] sm:max-w-md">
+            Annual Track & Field Championship
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- Play Store / APK Info Button -->
+        <button onclick="openPwaModal()" title="Android APK & Play Store Guide" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition active:scale-95">
+          <i data-lucide="smartphone" class="w-5 h-5"></i>
+        </button>
+
+        <!-- Role Indicator / Admin Lock Button -->
+        <button id="roleToggleBtn" onclick="handleRoleButtonClick()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition active:scale-95 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700">
+          <i id="roleIcon" data-lucide="shield" class="w-4 h-4 text-amber-400"></i>
+          <span id="roleLabel">Viewer</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== GLOBAL TOAST NOTIFICATION ==================== -->
+  <div id="toastContainer" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md pointer-events-none flex flex-col gap-2"></div>
+
+  <!-- ==================== MAIN CONTENT AREA ==================== -->
+  <main class="flex-1 max-w-4xl w-full mx-auto px-3 sm:px-4 pt-4 pb-safe">
+
+    <!-- ==================== TAB 1: LIVE RESULTS (VIEWER & ADMIN) ==================== -->
+    <section id="tab-results" class="space-y-4">
+      <!-- Quick Stats Banner -->
+      <div class="grid grid-cols-3 gap-2.5">
+        <div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-200/80">
+          <div class="text-[11px] font-medium text-slate-500 uppercase">Schools</div>
+          <div id="statSchoolsCount" class="font-sport text-2xl font-extrabold text-slate-900 mt-0.5">0</div>
+        </div>
+        <div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-200/80">
+          <div class="text-[11px] font-medium text-slate-500 uppercase">Athletes</div>
+          <div id="statAthletesCount" class="font-sport text-2xl font-extrabold text-emerald-600 mt-0.5">0</div>
+        </div>
+        <div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-200/80">
+          <div class="text-[11px] font-medium text-slate-500 uppercase">Finals Done</div>
+          <div id="statCompletedEvents" class="font-sport text-2xl font-extrabold text-amber-600 mt-0.5">0/0</div>
+        </div>
+      </div>
+
+      <!-- Filter Card -->
+      <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200/80 space-y-3">
+        <div class="flex flex-col sm:flex-row gap-2.5">
+          <div class="relative flex-1">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input type="text" id="resultsSearchInput" oninput="renderResultsTab()" placeholder="Search athlete, father name, bib #, or school..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-100 border border-transparent focus:border-emerald-500 focus:bg-white text-sm outline-none transition" />
+          </div>
+          <select id="resultsGroupFilter" onchange="onResultsGroupFilterChange()" class="px-3.5 py-2.5 rounded-xl bg-slate-100 border border-transparent focus:border-emerald-500 focus:bg-white text-sm font-medium text-slate-700 outline-none">
+            <option value="ALL">All Age Groups</option>
+          </select>
+        </div>
+
+        <!-- Event Filter Pills -->
+        <div id="resultsEventPills" class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Live Results Feed Container -->
+      <div id="liveResultsContainer" class="space-y-4">
+        <!-- Dynamically populated -->
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: HEATS & SCHEDULE ==================== -->
+    <section id="tab-heats" class="hidden space-y-4">
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="font-sport text-xl font-bold uppercase text-slate-900">Heats (Hit) & Final Sheets</h2>
+            <p class="text-xs text-slate-500">Select a group & event to view lane assignments, heats, and qualifiers</p>
+          </div>
+          <div class="flex gap-2">
+            <select id="heatsGroupSelect" onchange="onHeatsGroupChange()" class="flex-1 sm:w-44 px-3 py-2 rounded-xl bg-slate-100 text-sm font-medium text-slate-800 outline-none border border-slate-200">
+            </select>
+            <select id="heatsEventSelect" onchange="renderHeatsTab()" class="flex-1 sm:w-48 px-3 py-2 rounded-xl bg-slate-100 text-sm font-medium text-slate-800 outline-none border border-slate-200">
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Event Round Workspace -->
+      <div id="heatsWorkspaceContainer" class="space-y-4">
+        <!-- Dynamically populated -->
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: SCHOOL STANDINGS & ATHLETES ==================== -->
+    <section id="tab-standings" class="hidden space-y-4">
+      <!-- Championship Trophy Banner -->
+      <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 rounded-2xl p-5 text-white shadow-md">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="px-2.5 py-1 rounded-full bg-amber-400/20 text-amber-300 text-[11px] font-bold uppercase tracking-wider">Championship Points Table</span>
+            <h2 class="font-sport text-2xl sm:text-3xl font-extrabold uppercase mt-2">Overall School Standings</h2>
+            <p class="text-xs text-slate-300 mt-1">Points System: 1st (Gold) = <span id="ptsGoldLabel">5</span> pts • 2nd (Silver) = <span id="ptsSilverLabel">3</span> pts • 3rd (Bronze) = <span id="ptsBronzeLabel">1</span> pt</p>
+          </div>
+          <div class="w-14 h-14 rounded-2xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center text-amber-300 shrink-0">
+            <i data-lucide="award" class="w-8 h-8"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Standings Table Card -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase text-slate-500">
+                <th class="py-3 pl-4 pr-2 w-12">Rank</th>
+                <th class="py-3 px-2">School Name</th>
+                <th class="py-3 px-2 text-center text-amber-600">Gold</th>
+                <th class="py-3 px-2 text-center text-slate-500">Silver</th>
+                <th class="py-3 px-2 text-center text-orange-700">Bronze</th>
+                <th class="py-3 pl-2 pr-4 text-right text-slate-900">Points</th>
+              </tr>
+            </thead>
+            <tbody id="standingsTableBody" class="divide-y divide-slate-100 text-sm">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Participant Directory (Viewer Accessible) -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="font-sport text-lg font-bold uppercase text-slate-900">Registered Athletes Directory</h3>
+            <p class="text-xs text-slate-500">Includes Father's Name, Date of Birth (DOB), School & Bib No.</p>
+          </div>
+          <span id="directoryTotalBadge" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold">0 Athletes</span>
+        </div>
+        <input type="text" id="directorySearchInput" oninput="renderDirectoryList()" placeholder="Filter athletes by name, father name, school, or DOB..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/30 border border-transparent focus:border-emerald-500" />
+        <div id="athleteDirectoryList" class="divide-y divide-slate-100 max-h-96 overflow-y-auto">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: ADMIN CONTROL PANEL ==================== -->
+    <section id="tab-admin" class="hidden space-y-4">
+      <!-- Locked State (Shown when not logged in as Admin) -->
+      <div id="adminLockedView" class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200/80 text-center max-w-md mx-auto my-6">
+        <div class="w-16 h-16 rounded-2xl bg-slate-900 text-amber-400 flex items-center justify-center mx-auto mb-4 shadow-md">
+          <i data-lucide="lock" class="w-8 h-8"></i>
+        </div>
+        <h2 class="font-sport text-2xl font-extrabold uppercase text-slate-900">Admin Control Access</h2>
+        <p class="text-sm text-slate-500 mt-1">Enter the 4-digit Organizer PIN to manage schools, groups, events, participants, heats, and live results.</p>
+        
+        <div class="mt-5">
+          <input type="password" inputmode="numeric" maxlength="6" id="adminPinInput" onkeydown="if(event.key==='Enter') verifyAdminPin()" placeholder="••••" class="w-44 text-center text-2xl tracking-[0.5em] font-bold py-3 px-4 rounded-xl bg-slate-100 border border-slate-300 focus:border-emerald-500 focus:bg-white outline-none" />
+          <p class="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg py-1.5 px-3 mt-3 inline-block">
+            Default Testing PIN: <strong id="hintDefaultPin">12345</strong>
+          </p>
+        </div>
+
+        <button onclick="verifyAdminPin()" class="mt-5 w-full py-3.5 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition active:scale-[0.99]">
+          Unlock Admin Panel
+        </button>
+      </div>
+
+      <!-- Unlocked Admin Dashboard -->
+      <div id="adminUnlockedView" class="hidden space-y-4">
+        <!-- Admin Header Bar -->
+        <div class="bg-slate-900 text-white rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-bold">
+              <i data-lucide="shield-check" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <h2 class="font-sport text-xl font-bold uppercase leading-tight">Organizer Admin Console</h2>
+              <p class="text-xs text-slate-400">Changes broadcast instantly to all Viewer devices</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="loadSampleDataConfirm()" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition">
+              <i data-lucide="database" class="w-3.5 h-3.5"></i>
+              <span>Load Demo Data</span>
+            </button>
+            <button onclick="logoutAdmin()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition">
+              <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+              <span>Lock</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Admin Sub-Navigation Pills -->
+        <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+          <button onclick="switchAdminSubTab('participants')" id="adminSubBtn-participants" class="admin-sub-btn px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap bg-slate-900 text-white shadow-sm">
+            1. Participants
+          </button>
+          <button onclick="switchAdminSubTab('events')" id="adminSubBtn-events" class="admin-sub-btn px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-slate-600 border border-slate-200">
+            2. Events (Heat/Final)
+          </button>
+          <button onclick="switchAdminSubTab('groups')" id="adminSubBtn-groups" class="admin-sub-btn px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-slate-600 border border-slate-200">
+            3. Age Groups
+          </button>
+          <button onclick="switchAdminSubTab('schools')" id="adminSubBtn-schools" class="admin-sub-btn px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-slate-600 border border-slate-200">
+            4. Schools
+          </button>
+          <button onclick="switchAdminSubTab('settings')" id="adminSubBtn-settings" class="admin-sub-btn px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-slate-600 border border-slate-200">
+            5. Meet & PIN Settings
+          </button>
+        </div>
+
+        <!-- SUB-TAB: PARTICIPANTS MANAGEMENT -->
+        <div id="adminSub-participants" class="space-y-4">
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 class="font-sport text-lg font-bold uppercase text-slate-900">Manage Athletes / Participants</h3>
+              <p class="text-xs text-slate-500">Register athletes with Father's Name, Date of Birth (DOB), School, Group & Events</p>
+            </div>
+            <button onclick="openParticipantModal()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="user-plus" class="w-4 h-4"></i>
+              <span>Add Participant</span>
+            </button>
+          </div>
+
+          <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200/80 space-y-3">
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input type="text" id="adminParticipantSearch" oninput="renderAdminParticipants()" placeholder="Search by athlete name, father name, bib #..." class="flex-1 px-3.5 py-2 rounded-xl bg-slate-100 text-sm outline-none" />
+              <select id="adminParticipantGroupFilter" onchange="renderAdminParticipants()" class="px-3 py-2 rounded-xl bg-slate-100 text-sm font-medium text-slate-700 outline-none">
+                <option value="ALL">All Groups</option>
+              </select>
+            </div>
+            <div id="adminParticipantsList" class="divide-y divide-slate-100">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-TAB: EVENTS MANAGEMENT -->
+        <div id="adminSub-events" class="hidden space-y-4">
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 class="font-sport text-lg font-bold uppercase text-slate-900">Competition Events</h3>
+              <p class="text-xs text-slate-500">Configure events with "Heat & Final" or "Direct Final" format</p>
+            </div>
+            <button onclick="openEventModal()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i>
+              <span>Add Event</span>
+            </button>
+          </div>
+          <div id="adminEventsList" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- SUB-TAB: AGE GROUPS MANAGEMENT -->
+        <div id="adminSub-groups" class="hidden space-y-4">
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 class="font-sport text-lg font-bold uppercase text-slate-900">Age & Gender Groups</h3>
+              <p class="text-xs text-slate-500">Define age divisions (e.g. Under-14 Boys, Under-17 Girls) & optional DOB cutoffs</p>
+            </div>
+            <button onclick="openGroupModal()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="folder-plus" class="w-4 h-4"></i>
+              <span>Add Group</span>
+            </button>
+          </div>
+          <div id="adminGroupsList" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- SUB-TAB: SCHOOLS MANAGEMENT -->
+        <div id="adminSub-schools" class="hidden space-y-4">
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 class="font-sport text-lg font-bold uppercase text-slate-900">Participating Schools</h3>
+              <p class="text-xs text-slate-500">Add or edit competing schools and team codes</p>
+            </div>
+            <button onclick="openSchoolModal()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="building-2" class="w-4 h-4"></i>
+              <span>Add School</span>
+            </button>
+          </div>
+          <div id="adminSchoolsList" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- SUB-TAB: SETTINGS -->
+        <div id="adminSub-settings" class="hidden space-y-4">
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 space-y-4">
+            <h3 class="font-sport text-lg font-bold uppercase text-slate-900">Championship & Security Settings</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Championship / Meet Title</label>
+                <input type="text" id="settingMeetTitle" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm outline-none focus:bg-white focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Venue / Subtitle</label>
+                <input type="text" id="settingMeetSubtitle" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm outline-none focus:bg-white focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Admin Access PIN</label>
+                <input type="text" id="settingAdminPin" maxlength="6" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm font-mono outline-none focus:bg-white focus:border-emerald-500" />
+              </div>
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-xs font-semibold text-amber-700 mb-1">Gold Pts</label>
+                  <input type="number" id="settingPtsGold" class="w-full px-3 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm outline-none" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 mb-1">Silver Pts</label>
+                  <input type="number" id="settingPtsSilver" class="w-full px-3 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm outline-none" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-orange-700 mb-1">Bronze Pts</label>
+                  <input type="number" id="settingPtsBronze" class="w-full px-3 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm outline-none" />
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+              <button onclick="saveMeetSettings()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm">
+                Save Championship Settings
+              </button>
+              <button onclick="exportCompetitionJson()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Export Backup JSON</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== ANDROID BOTTOM NAVIGATION BAR ==================== -->
+  <nav class="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] bottom-nav-safe">
+    <div class="max-w-4xl mx-auto grid grid-cols-4 h-16">
+      <button onclick="switchMainTab('results')" id="navBtn-results" class="nav-btn flex flex-col items-center justify-center gap-1 text-emerald-600 font-semibold transition">
+        <i data-lucide="flame" class="w-5 h-5"></i>
+        <span class="text-[11px]">Live Results</span>
+      </button>
+      <button onclick="switchMainTab('heats')" id="navBtn-heats" class="nav-btn flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-900 font-medium transition">
+        <i data-lucide="list-ordered" class="w-5 h-5"></i>
+        <span class="text-[11px]">Heats & Finals</span>
+      </button>
+      <button onclick="switchMainTab('standings')" id="navBtn-standings" class="nav-btn flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-900 font-medium transition">
+        <i data-lucide="trophy" class="w-5 h-5"></i>
+        <span class="text-[11px]">Standings</span>
+      </button>
+      <button onclick="switchMainTab('admin')" id="navBtn-admin" class="nav-btn flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-900 font-medium transition">
+        <i data-lucide="shield" class="w-5 h-5"></i>
+        <span class="text-[11px]">Admin</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- 1. SCHOOL MODAL -->
+  <div id="schoolModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 id="schoolModalTitle" class="font-sport text-xl font-bold uppercase text-slate-900">Add School</h3>
+        <button onclick="closeModal('schoolModal')" class="p-1.5 rounded-lg bg-slate-100 text-slate-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <input type="hidden" id="editSchoolId" />
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">School Full Name *</label>
+          <input type="text" id="schoolNameInput" placeholder="e.g., St. Xavier's High School" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm outline-none focus:bg-white focus:border-emerald-500" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Short Code *</label>
+            <input type="text" id="schoolCodeInput" maxlength="8" placeholder="e.g., STX" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm uppercase outline-none focus:bg-white focus:border-emerald-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Zone / City</label>
+            <input type="text" id="schoolZoneInput" placeholder="e.g., North Zone" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm outline-none focus:bg-white focus:border-emerald-500" />
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeModal('schoolModal')" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-700 font-semibold text-sm">Cancel</button>
+        <button onclick="saveSchool()" class="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-semibold text-sm shadow-sm">Save School</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. AGE GROUP MODAL -->
+  <div id="groupModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 id="groupModalTitle" class="font-sport text-xl font-bold uppercase text-slate-900">Add Age Group</h3>
+        <button onclick="closeModal('groupModal')" class="p-1.5 rounded-lg bg-slate-100 text-slate-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <input type="hidden" id="editGroupId" />
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Group Name *</label>
+          <input type="text" id="groupNameInput" placeholder="e.g., Under-14 Boys / Sub-Junior Girls" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm outline-none focus:bg-white focus:border-emerald-500" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Min DOB (Optional)</label>
+            <input type="date" id="groupMinDobInput" class="w-full px-3 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm outline-none focus:bg-white focus:border-emerald-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Max DOB (Optional)</label>
+            <input type="date" id="groupMaxDobInput" class="w-full px-3 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm outline-none focus:bg-white focus:border-emerald-500" />
+          </div>
+        </div>
+        <p class="text-[11px] text-slate-400">If DOB cutoffs are provided, the app warns when adding an athlete outside the eligible age range.</p>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeModal('groupModal')" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-700 font-semibold text-sm">Cancel</button>
+        <button onclick="saveGroup()" class="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-semibold text-sm shadow-sm">Save Group</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. EVENT MODAL -->
+  <div id="eventModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 id="eventModalTitle" class="font-sport text-xl font-bold uppercase text-slate-900">Add Athletic Event</h3>
+        <button onclick="closeModal('eventModal')" class="p-1.5 rounded-lg bg-slate-100 text-slate-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <input type="hidden" id="editEventId" />
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Age Group *</label>
+          <select id="eventGroupSelect" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm font-medium outline-none focus:bg-white focus:border-emerald-500"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Event Name *</label>
+          <input type="text" id="eventNameInput" placeholder="e.g., 100m Sprint, Long Jump, Shot Put" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm outline-none focus:bg-white focus:border-emerald-500" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Round Format *</label>
+            <select id="eventFormatSelect" class="w-full px-3 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm font-medium outline-none focus:bg-white focus:border-emerald-500">
+              <option value="HEAT_AND_FINAL">Heat (Hit) & Final</option>
+              <option value="DIRECT_FINAL">Direct Final</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Measurement Type</label>
+            <select id="eventMetricSelect" class="w-full px-3 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm font-medium outline-none focus:bg-white focus:border-emerald-500">
+              <option value="TIME">Track Time (sec/min)</option>
+              <option value="DISTANCE">Field Distance/Height (m)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeModal('eventModal')" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-700 font-semibold text-sm">Cancel</button>
+        <button onclick="saveEvent()" class="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-semibold text-sm shadow-sm">Save Event</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. PARTICIPANT MODAL (WITH FATHER NAME & DOB) -->
+  <div id="participantModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl p-5 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 id="participantModalTitle" class="font-sport text-xl font-bold uppercase text-slate-900">Register Athlete</h3>
+        <button onclick="closeModal('participantModal')" class="p-1.5 rounded-lg bg-slate-100 text-slate-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <input type="hidden" id="editParticipantId" />
+      <div class="space-y-3">
+        <div class="grid grid-cols-3 gap-2.5">
+          <div class="col-span-2">
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Athlete Full Name *</label>
+            <input type="text" id="partNameInput" placeholder="e.g., Aarav Sharma" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm outline-none focus:bg-white focus:border-emerald-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Chest / Bib # *</label>
+            <input type="text" id="partBibInput" placeholder="e.g., 104" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm font-bold uppercase outline-none focus:bg-white focus:border-emerald-500" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Father's Name *</label>
+            <input type="text" id="partFatherInput" placeholder="e.g., Rajesh Sharma" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm outline-none focus:bg-white focus:border-emerald-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Date of Birth (DOB) *</label>
+            <input type="date" id="partDobInput" onchange="validateParticipantDobWarning()" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm outline-none focus:bg-white focus:border-emerald-500" />
+          </div>
+        </div>
+
+        <div id="partDobWarning" class="hidden text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2"></div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">School *</label>
+            <select id="partSchoolSelect" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm font-medium outline-none focus:bg-white focus:border-emerald-500"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Age Group *</label>
+            <select id="partGroupSelect" onchange="onParticipantModalGroupChange()" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-sm font-medium outline-none focus:bg-white focus:border-emerald-500"></select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5">Select Participating Events (in selected group)</label>
+          <div id="partEventsCheckboxes" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+            <!-- Checkboxes populated dynamically -->
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeModal('participantModal')" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-700 font-semibold text-sm">Cancel</button>
+        <button onclick="saveParticipant()" class="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-semibold text-sm shadow-sm">Save Participant</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. CUSTOM CONFIRMATION MODAL (REPLACES BROWSER confirm()) -->
+  <div id="confirmModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl space-y-4">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+          <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 id="confirmModalTitle" class="font-bold text-slate-900 text-base">Confirm Action</h3>
+          <p id="confirmModalMessage" class="text-xs text-slate-600 mt-1">Are you sure you want to proceed?</p>
+        </div>
+      </div>
+      <div class="flex gap-2 pt-1">
+        <button onclick="closeModal('confirmModal')" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-semibold text-xs">Cancel</button>
+        <button id="confirmModalActionBtn" class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-xs">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. ANDROID APK / PLAY STORE & PWA READINESS MODAL -->
+  <div id="pwaModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl p-5 shadow-xl space-y-4 max-h-[88vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <i data-lucide="smartphone" class="w-4 h-4"></i>
+          </span>
+          <h3 class="font-sport text-xl font-bold uppercase text-slate-900">Android App & Play Store Ready</h3>
+        </div>
+        <button onclick="closeModal('pwaModal')" class="p-1.5 rounded-lg bg-slate-100 text-slate-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-600 leading-relaxed">
+        <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900">
+          <div class="font-bold text-sm flex items-center gap-1.5">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+            <span>PWA + Real-Time Cloud Sync Active</span>
+          </div>
+          <p class="mt-1">This app includes an embedded Web App Manifest, Service Worker offline support, and real-time cloud synchronization so Judges/Admins and Spectators stay synced live.</p>
+        </div>
+
+        <div id="installPromptBox" class="hidden p-3.5 rounded-xl bg-slate-900 text-white flex items-center justify-between gap-3">
+          <div>
+            <div class="font-bold text-sm">Install App on This Device</div>
+            <div class="text-[11px] text-slate-300">Add directly to your Android Home Screen</div>
+          </div>
+          <button onclick="triggerPwaInstall()" class="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs shrink-0">
+            Install Now
+          </button>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="font-bold text-slate-900 text-sm">How to Publish to Google Play Store (APK / AAB):</h4>
+          <ol class="list-decimal pl-4 space-y-1.5">
+            <li><strong>Host over HTTPS:</strong> Deploy this single HTML file on Firebase Hosting, Vercel, or Netlify.</li>
+            <li><strong>Generate Signed Android App Bundle (.AAB / .APK):</strong> Use <strong>PWABuilder.com</strong> or Google's <strong>Bubblewrap CLI (Trusted Web Activity - TWA)</strong> or <strong>Capacitor</strong> to wrap your HTTPS URL into a signed Play Store package.</li>
+            <li><strong>Google Play Console:</strong> Upload the generated <code class="bg-slate-100 px-1 rounded">.aab</code> file, add your Digital Asset Links (<code class="bg-slate-100 px-1 rounded">assetlinks.json</code>), and publish to the Play Store.</li>
+          </ol>
+        </div>
+      </div>
+
+      <button onclick="closeModal('pwaModal')" class="w-full py-3 rounded-xl bg-slate-900 text-white font-semibold text-sm">Got It</button>
+    </div>
+  </div>
+
+  <!-- ==================== FIREBASE & APPLICATION LOGIC ==================== -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // ==================== PWA MANIFEST & SERVICE WORKER SETUP ====================
+    (function setupPwa() {
+      try {
+        const manifest = {
+          name: "Athletics Meet Pro - Inter-School Championship",
+          short_name: "AthleticsMeet",
+          start_url: ".",
+          display: "standalone",
+          background_color: "#0f172a",
+          theme_color: "#0f172a",
+          orientation: "portrait",
+          icons: [
+            {
+              src: "https://placehold.co/192x192/0f172a/10b981?text=AMP",
+              sizes: "192x192",
+              type: "image/png"
+            },
+            {
+              src: "https://placehold.co/512x512/0f172a/10b981?text=AMP",
+              sizes: "512x512",
+              type: "image/png"
+            }
+          ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        const linkEl = document.createElement('link');
+        linkEl.rel = 'manifest';
+        linkEl.href = manifestURL;
+        document.head.appendChild(linkEl);
+      } catch (e) {
+        console.warn("PWA manifest setup skipped:", e);
+      }
+    })();
+
+    let deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      const box = document.getElementById('installPromptBox');
+      if (box) box.classList.remove('hidden');
+    });
+
+    window.triggerPwaInstall = async () => {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      document.getElementById('installPromptBox').classList.add('hidden');
+    };
+
+    // ==================== APPLICATION STATE ====================
+    const DEFAULT_STATE = {
+      settings: {
+        meetTitle: "INTER-SCHOOL ATHLETICS 2026",
+        meetSubtitle: "District Annual Track & Field Championship",
+        adminPin: "1234",
+        ptsGold: 5,
+        ptsSilver: 3,
+        ptsBronze: 1
+      },
+      schools: [],
+      groups: [],
+      events: [],
+      participants: [],
+      // rounds keyed by eventId: { heats: [ { id, name, entries: [{ participantId, lane, mark, status }] } ], final: { published: false, entries: [{ participantId, lane, mark, position, medal }] } }
+      rounds: {}
+    };
+
+    let appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    let isAdminLoggedIn = false;
+    let activeMainTab = 'results';
+    let activeAdminSubTab = 'participants';
+    let selectedResultsEventFilter = 'ALL';
+
+    // Firebase references
+    let db = null;
+    let auth = null;
+    let currentUser = null;
+    let stateDocRef = null;
+    let isCloudConnected = false;
+
+    // ==================== SAMPLE SEED DATA GENERATOR ====================
+    function createDemoCompetitionState() {
+      const s1 = "sch_stx", s2 = "sch_dps", s3 = "sch_kv1", s4 = "sch_mgm";
+      const g1 = "grp_u14b", g2 = "grp_u14g", g3 = "grp_u17b";
+      const e1 = "evt_u14b_100m", e2 = "evt_u14b_lj", e3 = "evt_u14g_100m", e4 = "evt_u17b_200m";
+
+      const schools = [
+        { id: s1, name: "St. Xavier's High School", code: "STX", zone: "Central Zone" },
+        { id: s2, name: "Delhi Public School", code: "DPS", zone: "North Zone" },
+        { id: s3, name: "Kendriya Vidyalaya No. 1", code: "KV1", zone: "East Zone" },
+        { id: s4, name: "Modern Green Valley School", code: "MGV", zone: "South Zone" }
+      ];
+
+      const groups = [
+        { id: g1, name: "Sub-Junior Boys (U-14)", minDob: "2012-01-01", maxDob: "2014-12-31" },
+        { id: g2, name: "Sub-Junior Girls (U-14)", minDob: "2012-01-01", maxDob: "2014-12-31" },
+        { id: g3, name: "Junior Boys (U-17)", minDob: "2009-01-01", maxDob: "2011-12-31" }
+      ];
+
+      const events = [
+        { id: e1, groupId: g1, name: "100m Sprint", format: "HEAT_AND_FINAL", metric: "TIME" },
+        { id: e2, groupId: g1, name: "Long Jump", format: "DIRECT_FINAL", metric: "DISTANCE" },
+        { id: e3, groupId: g2, name: "100m Sprint", format: "HEAT_AND_FINAL", metric: "TIME" },
+        { id: e4, groupId: g3, name: "200m Race", format: "HEAT_AND_FINAL", metric: "TIME" }
+      ];
+
+      const participants = [
+        { id: "p1", bib: "101", name: "Aarav Sharma", fatherName: "Rajesh Sharma", dob: "2013-04-12", schoolId: s1, groupId: g1, eventIds: [e1, e2] },
+        { id: "p2", bib: "102", name: "Rohan Verma", fatherName: "Suresh Verma", dob: "2012-11-05", schoolId: s2, groupId: g1, eventIds: [e1, e2] },
+        { id: "p3", bib: "103", name: "Kabir Singh", fatherName: "Harpreet Singh", dob: "2013-07-19", schoolId: s3, groupId: g1, eventIds: [e1] },
+        { id: "p4", bib: "104", name: "Vivaan Patel", fatherName: "Mahesh Patel", dob: "2013-01-25", schoolId: s4, groupId: g1, eventIds: [e1, e2] },
+        { id: "p5", bib: "105", name: "Aditya Nair", fatherName: "Vinod Nair", dob: "2012-09-14", schoolId: s1, groupId: g1, eventIds: [e1] },
+        { id: "p6", bib: "106", name: "Devansh Joshi", fatherName: "Prakash Joshi", dob: "2013-06-30", schoolId: s2, groupId: g1, eventIds: [e1, e2] },
+        { id: "p7", bib: "201", name: "Ananya Roy", fatherName: "Subhash Roy", dob: "2013-03-18", schoolId: s2, groupId: g2, eventIds: [e3] },
+        { id: "p8", bib: "202", name: "Diya Menon", fatherName: "Krishnan Menon", dob: "2012-12-09", schoolId: s1, groupId: g2, eventIds: [e3] },
+        { id: "p9", bib: "203", name: "Meera Kapoor", fatherName: "Anil Kapoor", dob: "2013-08-22", schoolId: s3, groupId: g2, eventIds: [e3] },
+        { id: "p10", bib: "204", name: "Saanvi Gupta", fatherName: "Deepak Gupta", dob: "2013-05-11", schoolId: s4, groupId: g2, eventIds: [e3] },
+        { id: "p11", bib: "301", name: "Arjun Rathore", fatherName: "Vikram Rathore", dob: "2010-02-14", schoolId: s3, groupId: g3, eventIds: [e4] },
+        { id: "p12", bib: "302", name: "Siddharth Das", fatherName: "Tapan Das", dob: "2010-10-03", schoolId: s1, groupId: g3, eventIds: [e4] }
+      ];
+
+      const rounds = {
+        [e1]: {
+          heats: [
+            {
+              id: "h1",
+              name: "Heat 1",
+              entries: [
+                { participantId: "p1", lane: 1, mark: "12.45s", status: "Q" },
+                { participantId: "p2", lane: 2, mark: "12.62s", status: "Q" },
+                { participantId: "p3", lane: 3, mark: "13.10s", status: "" }
+              ]
+            },
+            {
+              id: "h2",
+              name: "Heat 2",
+              entries: [
+                { participantId: "p4", lane: 1, mark: "12.38s", status: "Q" },
+                { participantId: "p5", lane: 2, mark: "12.74s", status: "Q" },
+                { participantId: "p6", lane: 3, mark: "13.25s", status: "" }
+              ]
+            }
+          ],
+          final: {
+            published: true,
+            entries: [
+              { participantId: "p4", lane: 4, mark: "12.29s", position: 1, medal: "GOLD" },
+              { participantId: "p1", lane: 3, mark: "12.41s", position: 2, medal: "SILVER" },
+              { participantId: "p2", lane: 5, mark: "12.58s", position: 3, medal: "BRONZE" },
+              { participantId: "p5", lane: 2, mark: "12.71s", position: 4, medal: "" }
+            ]
+          }
+        },
+        [e2]: {
+          heats: [],
+          final: {
+            published: true,
+            entries: [
+              { participantId: "p1", lane: 1, mark: "5.42m", position: 1, medal: "GOLD" },
+              { participantId: "p6", lane: 2, mark: "5.18m", position: 2, medal: "SILVER" },
+              { participantId: "p2", lane: 3, mark: "5.04m", position: 3, medal: "BRONZE" },
+              { participantId: "p4", lane: 4, mark: "4.89m", position: 4, medal: "" }
+            ]
+          }
+        },
+        [e3]: {
+          heats: [
+            {
+              id: "h1",
+              name: "Heat 1",
+              entries: [
+                { participantId: "p7", lane: 1, mark: "13.50s", status: "Q" },
+                { participantId: "p8", lane: 2, mark: "13.68s", status: "Q" },
+                { participantId: "p9", lane: 3, mark: "13.95s", status: "Q" },
+                { participantId: "p10", lane: 4, mark: "14.20s", status: "" }
+              ]
+            }
+          ],
+          final: {
+            published: false,
+            entries: [
+              { participantId: "p7", lane: 3, mark: "", position: null, medal: "" },
+              { participantId: "p8", lane: 4, mark: "", position: null, medal: "" },
+              { participantId: "p9", lane: 5, mark: "", position: null, medal: "" }
+            ]
+          }
+        }
+      };
+
+      return {
+        settings: JSON.parse(JSON.stringify(DEFAULT_STATE.settings)),
+        schools,
+        groups,
+        events,
+        participants,
+        rounds
+      };
+    }
+
+    // ==================== CLOUD FIRESTORE INITIALIZATION ====================
+    async function initCloudSync() {
+      try {
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'athletics-meet-default';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+
+        if (!firebaseConfig) {
+          setSyncBadge(false, "LOCAL MODE");
+          appState = createDemoCompetitionState();
+          refreshAllUI();
+          return;
+        }
+
+        const app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+        // RULE 3: Authenticate FIRST and await before accessing Firestore
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+        currentUser = auth.currentUser;
+
+        if (!currentUser) {
+          setSyncBadge(false, "OFFLINE");
+          return;
+        }
+
+        // RULE 1: Strict public shared path so Admin updates broadcast live to all Viewers
+        stateDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'athletics_championship', 'live_state');
+
+        onSnapshot(
+          stateDocRef,
+          async (snapshot) => {
+            setSyncBadge(true, "LIVE SYNC");
+            if (snapshot.exists()) {
+              const data = snapshot.data();
+              appState = {
+                settings: { ...DEFAULT_STATE.settings, ...(data.settings || {}) },
+                schools: Array.isArray(data.schools) ? data.schools : [],
+                groups: Array.isArray(data.groups) ? data.groups : [],
+                events: Array.isArray(data.events) ? data.events : [],
+                participants: Array.isArray(data.participants) ? data.participants : [],
+                rounds: data.rounds || {}
+              };
+              refreshAllUI();
+            } else {
+              // First-time initialization with rich demo data so Viewer & Admin work immediately
+              const seed = createDemoCompetitionState();
+              appState = seed;
+              refreshAllUI();
+              await persistStateToCloud();
+            }
+          },
+          (error) => {
+            console.error("Firestore real-time listener error:", error);
+            setSyncBadge(false, "SYNC ERROR");
+          }
+        );
+      } catch (err) {
+        console.error("Cloud initialization failed:", err);
+        setSyncBadge(false, "OFFLINE MODE");
+        if (appState.schools.length === 0) {
+          appState = createDemoCompetitionState();
+          refreshAllUI();
+        }
+      }
+    }
+
+    async function persistStateToCloud() {
+      refreshAllUI();
+      if (!stateDocRef || !currentUser) return;
+      try {
+        await setDoc(stateDocRef, {
+          settings: appState.settings,
+          schools: appState.schools,
+          groups: appState.groups,
+          events: appState.events,
+          participants: appState.participants,
+          rounds: appState.rounds,
+          updatedAt: Date.now()
+        });
+      } catch (err) {
+        console.error("Failed to sync state:", err);
+        showToast("Sync warning: Check internet connection", "error");
+      }
+    }
+
+    function setSyncBadge(isOnline, label) {
+      isCloudConnected = isOnline;
+      const badge = document.getElementById('syncStatusBadge');
+      const text = document.getElementById('syncStatusText');
+      if (!badge || !text) return;
+      text.textContent = label;
+      if (isOnline) {
+        badge.className = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+      } else {
+        badge.className = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30";
+      }
+    }
+
+    // ==================== HELPER UTILITIES ====================
+    function uid(prefix = 'id') {
+      return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
+    }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function formatDob(dobStr) {
+      if (!dobStr) return 'N/A';
+      const parts = dobStr.split('-');
+      if (parts.length !== 3) return dobStr;
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const mIdx = parseInt(parts[1], 10) - 1;
+      return `${parts[2]} ${months[mIdx] || parts[1]} ${parts[0]}`;
+    }
+
+    function getSchool(id) {
+      return appState.schools.find(s => s.id === id) || { name: 'Unknown School', code: '---', zone: '' };
+    }
+
+    function getGroup(id) {
+      return appState.groups.find(g => g.id === id) || { name: 'Unassigned Group' };
+    }
+
+    function getEvent(id) {
+      return appState.events.find(e => e.id === id);
+    }
+
+    function getParticipant(id) {
+      return appState.participants.find(p => p.id === id);
+    }
+
+    window.showToast = (message, type = 'success') => {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      const bg = type === 'error' ? 'bg-rose-600' : type === 'info' ? 'bg-slate-800' : 'bg-emerald-600';
+      el.className = `${bg} text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-lg flex items-center justify-between gap-2 transition-all duration-300`;
+      el.innerHTML = `<span>${escapeHtml(message)}</span>`;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 300);
+      }, 2800);
+    };
+
+    window.openModal = (id) => {
+      document.getElementById(id).classList.remove('hidden');
+      lucide.createIcons();
+    };
+
+    window.closeModal = (id) => {
+      document.getElementById(id).classList.add('hidden');
+    };
+
+    window.openPwaModal = () => openModal('pwaModal');
+
+    function askConfirmation(title, message, onConfirm) {
+      document.getElementById('confirmModalTitle').textContent = title;
+      document.getElementById('confirmModalMessage').textContent = message;
+      const btn = document.getElementById('confirmModalActionBtn');
+      btn.onclick = () => {
+        closeModal('confirmModal');
+        onConfirm();
+      };
+      openModal('confirmModal');
+    }
+
+    // ==================== NAVIGATION & ROLE MANAGEMENT ====================
+    window.switchMainTab = (tabName) => {
+      activeMainTab = tabName;
+      ['results', 'heats', 'standings', 'admin'].forEach(t => {
+        const sec = document.getElementById(`tab-${t}`);
+        const btn = document.getElementById(`navBtn-${t}`);
+        if (t === tabName) {
+          sec.classList.remove('hidden');
+          btn.classList.remove('text-slate-500');
+          btn.classList.add('text-emerald-600', 'font-semibold');
+        } else {
+          sec.classList.add('hidden');
+          btn.classList.add('text-slate-500');
+          btn.classList.remove('text-emerald-600', 'font-semibold');
+        }
+      });
+      refreshAllUI();
+    };
+
+    window.handleRoleButtonClick = () => {
+      switchMainTab('admin');
+      if (!isAdminLoggedIn) {
+        setTimeout(() => document.getElementById('adminPinInput')?.focus(), 100);
+      }
+    };
+
+    window.verifyAdminPin = () => {
+      const entered = document.getElementById('adminPinInput').value.trim();
+      const expected = String(appState.settings.adminPin || '123456');
+      if (entered === expected) {
+        isAdminLoggedIn = true;
+        document.getElementById('adminPinInput').value = '';
+        updateRoleHeaderUI();
+        refreshAllUI();
+        showToast("Admin Mode Unlocked! All edits sync live.");
+      } else {
+        showToast("Incorrect PIN. Check default PIN shown below.", "error");
+      }
+    };
+
+    window.logoutAdmin = () => {
+      isAdminLoggedIn = false;
+      updateRoleHeaderUI();
+      refreshAllUI();
+      showToast("Switched back to Viewer Mode", "info");
+    };
+
+    function updateRoleHeaderUI() {
+      const roleLabel = document.getElementById('roleLabel');
+      const roleBtn = document.getElementById('roleToggleBtn');
+      const lockedView = document.getElementById('adminLockedView');
+      const unlockedView = document.getElementById('adminUnlockedView');
+
+      if (isAdminLoggedIn) {
+        roleLabel.textContent = "Admin";
+        roleBtn.className = "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition active:scale-95 bg-amber-400 text-slate-950 shadow-sm";
+        lockedView.classList.add('hidden');
+        unlockedView.classList.remove('hidden');
+      } else {
+        roleLabel.textContent = "Viewer";
+        roleBtn.className = "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition active:scale-95 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700";
+        lockedView.classList.remove('hidden');
+        unlockedView.classList.add('hidden');
+      }
+      document.getElementById('hintDefaultPin').textContent = appState.settings.adminPin || '1234';
+    }
+
+    window.switchAdminSubTab = (sub) => {
+      activeAdminSubTab = sub;
+      ['participants', 'events', 'groups', 'schools', 'settings'].forEach(s => {
+        const panel = document.getElementById(`adminSub-${s}`);
+        const btn = document.getElementById(`adminSubBtn-${s}`);
+        if (s === sub) {
+          panel.classList.remove('hidden');
+          btn.className = "admin-sub-btn px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap bg-slate-900 text-white shadow-sm";
+        } else {
+          panel.classList.add('hidden');
+          btn.className = "admin-sub-btn px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-slate-600 border border-slate-200";
+        }
+      });
+      refreshAllUI();
+    };
+
+    // ==================== MASTER REFRESH FUNCTION ====================
+    function refreshAllUI() {
+      // Header titles
+      document.getElementById('headerMeetTitle').textContent = appState.settings.meetTitle || "INTER-SCHOOL ATHLETICS";
+      document.getElementById('headerMeetSubtitle').textContent = appState.settings.meetSubtitle || "Track & Field Championship";
+      document.getElementById('ptsGoldLabel').textContent = appState.settings.ptsGold;
+      document.getElementById('ptsSilverLabel').textContent = appState.settings.ptsSilver;
+      document.getElementById('ptsBronzeLabel').textContent = appState.settings.ptsBronze;
+
+      // Top quick metrics
+      document.getElementById('statSchoolsCount').textContent = appState.schools.length;
+      document.getElementById('statAthletesCount').textContent = appState.participants.length;
+      const publishedCount = appState.events.filter(ev => appState.rounds[ev.id]?.final?.published).length;
+      document.getElementById('statCompletedEvents').textContent = `${publishedCount}/${appState.events.length}`;
+
+      updateRoleHeaderUI();
+      populateFilterDropdowns();
+      renderResultsTab();
+      renderHeatsTab();
+      renderStandingsTab();
+
+      if (isAdminLoggedIn) {
+        renderAdminParticipants();
+        renderAdminEvents();
+        renderAdminGroups();
+        renderAdminSchools();
+        populateSettingsForm();
+      }
+      lucide.createIcons();
+    }
+
+    function populateFilterDropdowns() {
+      // Results Group Filter
+      const resGroupSel = document.getElementById('resultsGroupFilter');
+      const prevResGroup = resGroupSel.value;
+      resGroupSel.innerHTML = `<option value="ALL">All Age Groups</option>` +
+        appState.groups.map(g => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join('');
+      if ([...resGroupSel.options].some(o => o.value === prevResGroup)) resGroupSel.value = prevResGroup;
+
+      // Results Event Pills
+      const selectedGrp = resGroupSel.value;
+      const filteredEvents = selectedGrp === 'ALL'
+        ? appState.events
+        : appState.events.filter(e => e.groupId === selectedGrp);
+
+      if (selectedResultsEventFilter !== 'ALL' && !filteredEvents.some(e => e.id === selectedResultsEventFilter)) {
+        selectedResultsEventFilter = 'ALL';
+      }
+
+      const pillsContainer = document.getElementById('resultsEventPills');
+      pillsContainer.innerHTML = `
+        <button onclick="selectResultsEventPill('ALL')" class="px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${selectedResultsEventFilter === 'ALL' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+          All Events (${filteredEvents.length})
+        </button>
+      ` + filteredEvents.map(ev => {
+        const grp = getGroup(ev.groupId);
+        const label = selectedGrp === 'ALL' ? `${ev.name} (${grp.name.split(' ')[0]})` : ev.name;
+        const active = selectedResultsEventFilter === ev.id;
+        return `
+          <button onclick="selectResultsEventPill('${ev.id}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${active ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+            ${escapeHtml(label)}
+          </button>
+        `;
+      }).join('');
+
+      // Heats Tab Group & Event Selectors
+      const heatsGroupSel = document.getElementById('heatsGroupSelect');
+      const prevHeatsGrp = heatsGroupSel.value;
+      heatsGroupSel.innerHTML = appState.groups.length
+        ? appState.groups.map(g => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join('')
+        : `<option value="">No Groups</option>`;
+      if ([...heatsGroupSel.options].some(o => o.value === prevHeatsGrp)) heatsGroupSel.value = prevHeatsGrp;
+
+      const activeHeatsGrp = heatsGroupSel.value;
+      const grpEvents = appState.events.filter(e => e.groupId === activeHeatsGrp);
+      const heatsEventSel = document.getElementById('heatsEventSelect');
+      const prevHeatsEv = heatsEventSel.value;
+      heatsEventSel.innerHTML = grpEvents.length
+        ? grpEvents.map(e => `<option value="${e.id}">${escapeHtml(e.name)} (${e.format === 'HEAT_AND_FINAL' ? 'Heat & Final' : 'Direct Final'})</option>`).join('')
+        : `<option value="">No Events in Group</option>`;
+      if ([...heatsEventSel.options].some(o => o.value === prevHeatsEv)) heatsEventSel.value = prevHeatsEv;
+
+      // Admin Participant Group Filter
+      const adminPartGrp = document.getElementById('adminParticipantGroupFilter');
+      if (adminPartGrp) {
+        const prevAdminGrp = adminPartGrp.value;
+        adminPartGrp.innerHTML = `<option value="ALL">All Groups</option>` +
+          appState.groups.map(g => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join('');
+        if ([...adminPartGrp.options].some(o => o.value === prevAdminGrp)) adminPartGrp.value = prevAdminGrp;
+      }
+    }
+
+    window.onResultsGroupFilterChange = () => {
+      selectedResultsEventFilter = 'ALL';
+      populateFilterDropdowns();
+      renderResultsTab();
+    };
+
+    window.selectResultsEventPill = (eventId) => {
+      selectedResultsEventFilter = eventId;
+      populateFilterDropdowns();
+      renderResultsTab();
+    };
+
+    window.onHeatsGroupChange = () => {
+      populateFilterDropdowns();
+      renderHeatsTab();
+    };
+
+    // ==================== TAB 1: LIVE RESULTS RENDERER ====================
+    window.renderResultsTab = () => {
+      const container = document.getElementById('liveResultsContainer');
+      const searchQ = (document.getElementById('resultsSearchInput')?.value || '').trim().toLowerCase();
+      const groupFilter = document.getElementById('resultsGroupFilter')?.value || 'ALL';
+
+      let eventsToShow = appState.events.filter(ev => {
+        if (groupFilter !== 'ALL' && ev.groupId !== groupFilter) return false;
+        if (selectedResultsEventFilter !== 'ALL' && ev.id !== selectedResultsEventFilter) return false;
+        return true;
+      });
+
+      if (eventsToShow.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl p-8 text-center border border-slate-200/80">
+            <p class="text-sm font-semibold text-slate-700">No events found for this filter.</p>
+            <p class="text-xs text-slate-400 mt-1">Admin can create groups and events from the Admin tab.</p>
+          </div>`;
+        return;
+      }
+
+      const cardsHtml = eventsToShow.map(ev => {
+        const grp = getGroup(ev.groupId);
+        const roundData = appState.rounds[ev.id] || { heats: [], final: { published: false, entries: [] } };
+        const finalEntries = roundData.final?.entries || [];
+        const isPublished = roundData.final?.published;
+        const heats = roundData.heats || [];
+
+        // Filter entries by search query if active
+        const matchesSearch = (participantId) => {
+          if (!searchQ) return true;
+          const p = getParticipant(participantId);
+          if (!p) return false;
+          const sch = getSchool(p.schoolId);
+          return (
+            p.name.toLowerCase().includes(searchQ) ||
+            p.fatherName.toLowerCase().includes(searchQ) ||
+            p.bib.toLowerCase().includes(searchQ) ||
+            sch.name.toLowerCase().includes(searchQ) ||
+            sch.code.toLowerCase().includes(searchQ)
+          );
+        };
+
+        // Sort final entries by position if assigned
+        const sortedFinals = [...finalEntries]
+          .filter(e => matchesSearch(e.participantId))
+          .sort((a, b) => (a.position || 999) - (b.position || 999));
+
+        const matchingHeatRows = [];
+        heats.forEach(h => {
+          (h.entries || []).forEach(he => {
+            if (matchesSearch(he.participantId)) {
+              matchingHeatRows.push({ heatName: h.name, ...he });
+            }
+          });
+        });
+
+        if (searchQ && sortedFinals.length === 0 && matchingHeatRows.length === 0) {
+          return '';
+        }
+
+        const statusPill = isPublished
+          ? `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">Official Final Result</span>`
+          : heats.length > 0
+            ? `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-amber-100 text-amber-800 border border-amber-200">Heats In Progress</span>`
+            : `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-slate-100 text-slate-600">Scheduled</span>`;
+
+        let finalSectionHtml = '';
+        if (sortedFinals.length > 0) {
+          finalSectionHtml = `
+            <div class="divide-y divide-slate-100">
+              ${sortedFinals.map(entry => {
+                const p = getParticipant(entry.participantId);
+                if (!p) return '';
+                const sch = getSchool(p.schoolId);
+                let medalBadge = `<span class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs flex items-center justify-center">${entry.position || '-'}</span>`;
+                if (entry.medal === 'GOLD' || entry.position === 1) {
+                  medalBadge = `<span class="px-2 py-1 rounded-lg bg-amber-400 text-slate-950 font-extrabold text-[11px] shadow-xs">🥇 1st</span>`;
+                } else if (entry.medal === 'SILVER' || entry.position === 2) {
+                  medalBadge = `<span class="px-2 py-1 rounded-lg bg-slate-200 text-slate-800 font-extrabold text-[11px]">🥈 2nd</span>`;
+                } else if (entry.medal === 'BRONZE' || entry.position === 3) {
+                  medalBadge = `<span class="px-2 py-1 rounded-lg bg-orange-200 text-orange-950 font-extrabold text-[11px]">🥉 3rd</span>`;
+                }
+
+                return `
+                  <div class="py-3 px-4 flex items-center justify-between gap-3 ${entry.position && entry.position <= 3 ? 'bg-amber-50/30' : ''}">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="shrink-0">${medalBadge}</div>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-1.5">
+                          <span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-900 text-white">#${escapeHtml(p.bib)}</span>
+                          <span class="font-bold text-sm text-slate-900 truncate">${escapeHtml(p.name)}</span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 mt-0.5 truncate">
+                          S/D of <strong>${escapeHtml(p.fatherName)}</strong> • DOB: ${formatDob(p.dob)}
+                        </div>
+                        <div class="text-[11px] font-semibold text-emerald-700 mt-0.5 truncate">
+                          ${escapeHtml(sch.name)} (${escapeHtml(sch.code)})
+                        </div>
+                      </div>
+                    </div>
+                    <div class="text-right shrink-0">
+                      <div class="font-sport text-lg font-extrabold text-slate-900">${escapeHtml(entry.mark || '—')}</div>
+                      <div class="text-[10px] text-slate-400 uppercase font-semibold">Final Mark</div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `;
+        } else if (matchingHeatRows.length > 0) {
+          finalSectionHtml = `
+            <div class="p-3 bg-slate-50/70 space-y-2">
+              <div class="text-[11px] font-bold uppercase text-slate-500 px-1">Heat (Hit) Round Standings</div>
+              ${matchingHeatRows.map(hr => {
+                const p = getParticipant(hr.participantId);
+                if (!p) return '';
+                const sch = getSchool(p.schoolId);
+                const qBadge = hr.status === 'Q'
+                  ? `<span class="px-2 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-bold">Q • Qualified</span>`
+                  : hr.status
+                    ? `<span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700 text-[10px] font-bold">${escapeHtml(hr.status)}</span>`
+                    : `<span class="px-2 py-0.5 rounded bg-slate-200 text-slate-600 text-[10px] font-semibold">${escapeHtml(hr.heatName)}</span>`;
+                return `
+                  <div class="bg-white rounded-xl p-2.5 border border-slate-200/70 flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-white">#${escapeHtml(p.bib)}</span>
+                        <span class="font-bold text-xs text-slate-900 truncate">${escapeHtml(p.name)}</span>
+                        ${qBadge}
+                      </div>
+                      <div class="text-[11px] text-slate-500 mt-0.5 truncate">
+                        Father: ${escapeHtml(p.fatherName)} • ${escapeHtml(sch.code)}
+                      </div>
+                    </div>
+                    <div class="font-sport text-base font-bold text-slate-800 shrink-0">${escapeHtml(hr.mark || 'Pending')}</div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `;
+        } else {
+          const registeredCount = appState.participants.filter(p => (p.eventIds || []).includes(ev.id)).length;
+          finalSectionHtml = `
+            <div class="p-4 text-center text-xs text-slate-500">
+              ${registeredCount} athletes registered. Heats/Finals results will appear here once recorded.
+            </div>
+          `;
+        }
+
+        return `
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+            <div class="px-4 py-3 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between gap-2">
+              <div>
+                <div class="text-[11px] font-bold uppercase text-emerald-700">${escapeHtml(grp.name)}</div>
+                <h3 class="font-sport text-xl font-extrabold uppercase text-slate-900 leading-tight">${escapeHtml(ev.name)}</h3>
+              </div>
+              <div class="flex items-center gap-2">
+                ${statusPill}
+                <button onclick="jumpToEventHeats('${ev.groupId}', '${ev.id}')" class="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-emerald-600" title="View Heats & Lanes">
+                  <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+            ${finalSectionHtml}
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = cardsHtml || `
+        <div class="bg-white rounded-2xl p-8 text-center border border-slate-200/80">
+          <p class="text-sm font-semibold text-slate-700">No matching results found for "${escapeHtml(searchQ)}".</p>
+        </div>`;
+      lucide.createIcons();
+    };
+
+    window.jumpToEventHeats = (groupId, eventId) => {
+      switchMainTab('heats');
+      document.getElementById('heatsGroupSelect').value = groupId;
+      populateFilterDropdowns();
+      document.getElementById('heatsEventSelect').value = eventId;
+      renderHeatsTab();
+    };
+
+    // ==================== TAB 2: HEATS (HIT) & FINAL ROUND WORKSPACE ====================
+    window.renderHeatsTab = () => {
+      const container = document.getElementById('heatsWorkspaceContainer');
+      const eventId = document.getElementById('heatsEventSelect')?.value;
+      const ev = getEvent(eventId);
+
+      if (!ev) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl p-8 text-center border border-slate-200/80">
+            <p class="text-sm font-semibold text-slate-700">No event selected.</p>
+            <p class="text-xs text-slate-400 mt-1">Select an age group and event above to view or manage heats and finals.</p>
+          </div>`;
+        return;
+      }
+
+      const grp = getGroup(ev.groupId);
+      const registeredAthletes = appState.participants.filter(p => (p.eventIds || []).includes(ev.id));
+      if (!appState.rounds[ev.id]) {
+        appState.rounds[ev.id] = { heats: [], final: { published: false, entries: [] } };
+      }
+      const roundObj = appState.rounds[ev.id];
+      const hasHeats = ev.format === 'HEAT_AND_FINAL';
+
+      let html = `
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-slate-900 text-white text-[10px] font-bold uppercase">${escapeHtml(grp.name)}</span>
+              <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase">
+                ${hasHeats ? 'Heat (Hit) + Final Format' : 'Direct Final Format'}
+              </span>
+            </div>
+            <h3 class="font-sport text-2xl font-extrabold uppercase text-slate-900 mt-1">${escapeHtml(ev.name)}</h3>
+            <p class="text-xs text-slate-500">${registeredAthletes.length} Registered Athletes</p>
+          </div>
+          ${isAdminLoggedIn ? `
+            <div class="flex flex-wrap gap-2">
+              ${hasHeats ? `
+                <button onclick="generateHeatsForEvent('${ev.id}', 6)" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5">
+                  <i data-lucide="shuffle" class="w-3.5 h-3.5"></i>
+                  <span>Auto-Generate Heats</span>
+                </button>
+                <button onclick="promoteQualifiersToFinal('${ev.id}')" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold flex items-center gap-1.5">
+                  <i data-lucide="arrow-right-circle" class="w-3.5 h-3.5"></i>
+                  <span>Promote 'Q' to Final</span>
+                </button>
+              ` : `
+                <button onclick="populateDirectFinal('${ev.id}')" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5">
+                  <i data-lucide="users" class="w-3.5 h-3.5"></i>
+                  <span>Load All Athletes to Final</span>
+                </button>
+              `}
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      // SECTION A: HEATS (IF HEAT_AND_FINAL)
+      if (hasHeats) {
+        html += `<div class="space-y-3">
+          <div class="flex items-center justify-between px-1">
+            <h4 class="font-sport text-lg font-bold uppercase text-slate-800">Round 1: Heat (Hit) Sheets</h4>
+            ${isAdminLoggedIn ? `
+              <button onclick="addEmptyHeat('${ev.id}')" class="text-xs font-bold text-emerald-700 hover:underline">+ Add Extra Heat</button>
+            ` : ''}
+          </div>
+        `;
+
+        if (!roundObj.heats || roundObj.heats.length === 0) {
+          html += `
+            <div class="bg-white rounded-2xl p-6 text-center border border-dashed border-slate-300">
+              <p class="text-xs text-slate-500">No heats created yet for ${escapeHtml(ev.name)}.</p>
+              ${isAdminLoggedIn ? `<p class="text-xs text-emerald-700 font-semibold mt-1">Click "Auto-Generate Heats" above to seed all ${registeredAthletes.length} athletes into lanes.</p>` : ''}
+            </div>
+          `;
+        } else {
+          roundObj.heats.forEach((heat, hIdx) => {
+            html += `
+              <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+                <div class="px-4 py-2.5 bg-slate-800 text-white flex items-center justify-between">
+                  <span class="font-sport text-base font-bold uppercase tracking-wide">${escapeHtml(heat.name)}</span>
+                  <span class="text-[11px] text-slate-300">${(heat.entries || []).length} Athletes</span>
+                </div>
+                <div class="divide-y divide-slate-100">
+                  ${(heat.entries || []).map((entry, eIdx) => {
+                    const p = getParticipant(entry.participantId);
+                    if (!p) return '';
+                    const sch = getSchool(p.schoolId);
+                    return `
+                      <div class="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                          <span class="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0">L${entry.lane || eIdx + 1}</span>
+                          <div class="min-w-0">
+                            <div class="flex items-center gap-1.5">
+                              <span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-900 text-white">#${escapeHtml(p.bib)}</span>
+                              <span class="font-bold text-sm text-slate-900 truncate">${escapeHtml(p.name)}</span>
+                            </div>
+                            <div class="text-[11px] text-slate-500 truncate">
+                              Father: ${escapeHtml(p.fatherName)} • DOB: ${formatDob(p.dob)} • <strong class="text-emerald-700">${escapeHtml(sch.code)}</strong>
+                            </div>
+                          </div>
+                        </div>
+
+                        ${isAdminLoggedIn ? `
+                          <div class="flex items-center gap-2 self-end sm:self-center">
+                            <input type="text" value="${escapeHtml(entry.mark || '')}" onchange="updateHeatEntry('${ev.id}', ${hIdx}, ${eIdx}, 'mark', this.value)" placeholder="${ev.metric === 'TIME' ? '12.45s' : '5.10m'}" class="w-24 px-2.5 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-xs font-bold text-right outline-none focus:bg-white focus:border-emerald-500" />
+                            <select onchange="updateHeatEntry('${ev.id}', ${hIdx}, ${eIdx}, 'status', this.value)" class="px-2 py-1.5 rounded-lg text-xs font-bold border outline-none ${entry.status === 'Q' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-100 text-slate-700 border-slate-200'}">
+                              <option value="" ${!entry.status ? 'selected' : ''}>Run</option>
+                              <option value="Q" ${entry.status === 'Q' ? 'selected' : ''}>Q (Qualify)</option>
+                              <option value="DNF" ${entry.status === 'DNF' ? 'selected' : ''}>DNF</option>
+                              <option value="DQ" ${entry.status === 'DQ' ? 'selected' : ''}>DQ</option>
+                            </select>
+                          </div>
+                        ` : `
+                          <div class="flex items-center gap-2 self-end sm:self-center">
+                            <span class="font-sport text-base font-bold text-slate-900">${escapeHtml(entry.mark || '—')}</span>
+                            ${entry.status === 'Q' ? `<span class="px-2 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-bold">Q</span>` : entry.status ? `<span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700 text-[10px] font-bold">${escapeHtml(entry.status)}</span>` : ''}
+                          </div>
+                        `}
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            `;
+          });
+        }
+        html += `</div>`;
+      }
+
+      // SECTION B: FINAL ROUND
+      const finalEntries = roundObj.final?.entries || [];
+      const isFinalPublished = !!roundObj.final?.published;
+
+      html += `
+        <div class="space-y-3 pt-2">
+          <div class="flex flex-wrap items-center justify-between gap-2 px-1">
+            <h4 class="font-sport text-lg font-bold uppercase text-slate-900">
+              ${hasHeats ? 'Round 2: Championship Final' : 'Championship Final Sheet'}
+            </h4>
+            ${isAdminLoggedIn ? `
+              <div class="flex items-center gap-2">
+                <button onclick="autoRankFinal('${ev.id}')" class="px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold">
+                  Auto-Rank by Mark
+                </button>
+                <button onclick="togglePublishFinal('${ev.id}')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-xs ${isFinalPublished ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-600 text-white'}">
+                  ${isFinalPublished ? 'Unpublish Final' : 'Publish Official Result'}
+                </button>
+              </div>
+            ` : `
+              <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${isFinalPublished ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}">
+                ${isFinalPublished ? 'Official Published' : 'Provisional / Upcoming'}
+              </span>
+            `}
+          </div>
+
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+            ${finalEntries.length === 0 ? `
+              <div class="p-6 text-center text-xs text-slate-500">
+                ${hasHeats ? 'No finalists promoted yet. Mark qualifiers as "Q" in Heats and click "Promote Q to Final".' : 'No athletes loaded in Final yet. Click "Load All Athletes to Final" above.'}
+              </div>
+            ` : `
+              <div class="divide-y divide-slate-100">
+                ${finalEntries.map((fe, fIdx) => {
+                  const p = getParticipant(fe.participantId);
+                  if (!p) return '';
+                  const sch = getSchool(p.schoolId);
+                  return `
+                    <div class="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${fe.position && fe.position <= 3 ? 'bg-amber-50/40' : ''}">
+                      <div class="flex items-center gap-3 min-w-0">
+                        <span class="w-8 h-8 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                          ${fe.position ? `#${fe.position}` : `L${fe.lane || fIdx + 1}`}
+                        </span>
+                        <div class="min-w-0">
+                          <div class="flex items-center gap-1.5">
+                            <span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-800">Bib ${escapeHtml(p.bib)}</span>
+                            <span class="font-bold text-sm text-slate-900 truncate">${escapeHtml(p.name)}</span>
+                          </div>
+                          <div class="text-[11px] text-slate-500 truncate">
+                            Father: ${escapeHtml(p.fatherName)} • DOB: ${formatDob(p.dob)} • <strong class="text-emerald-700">${escapeHtml(sch.name)}</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      ${isAdminLoggedIn ? `
+                        <div class="flex items-center gap-2 self-end sm:self-center">
+                          <input type="text" value="${escapeHtml(fe.mark || '')}" onchange="updateFinalEntry('${ev.id}', ${fIdx}, 'mark', this.value)" placeholder="${ev.metric === 'TIME' ? '12.15s' : '5.55m'}" class="w-24 px-2.5 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-xs font-bold text-right outline-none focus:bg-white focus:border-emerald-500" />
+                          <select onchange="updateFinalEntry('${ev.id}', ${fIdx}, 'position', this.value)" class="px-2.5 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 outline-none">
+                            <option value="" ${!fe.position ? 'selected' : ''}>Rank</option>
+                            <option value="1" ${fe.position == 1 ? 'selected' : ''}>🥇 1st (Gold)</option>
+                            <option value="2" ${fe.position == 2 ? 'selected' : ''}>🥈 2nd (Silver)</option>
+                            <option value="3" ${fe.position == 3 ? 'selected' : ''}>🥉 3rd (Bronze)</option>
+                            <option value="4" ${fe.position == 4 ? 'selected' : ''}>4th</option>
+                            <option value="5" ${fe.position == 5 ? 'selected' : ''}>5th</option>
+                            <option value="6" ${fe.position == 6 ? 'selected' : ''}>6th</option>
+                            <option value="7" ${fe.position == 7 ? 'selected' : ''}>7th</option>
+                            <option value="8" ${fe.position == 8 ? 'selected' : ''}>8th</option>
+                          </select>
+                        </div>
+                      ` : `
+                        <div class="flex items-center gap-2.5 self-end sm:self-center">
+                          <span class="font-sport text-lg font-extrabold text-slate-900">${escapeHtml(fe.mark || '—')}</span>
+                          ${fe.position == 1 ? `<span class="px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 text-xs font-extrabold">🥇 GOLD</span>` :
+                            fe.position == 2 ? `<span class="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-800 text-xs font-extrabold">🥈 SILVER</span>` :
+                            fe.position == 3 ? `<span class="px-2.5 py-1 rounded-lg bg-orange-200 text-orange-950 text-xs font-extrabold">🥉 BRONZE</span>` : ''}
+                        </div>
+                      `}
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+
+      container.innerHTML = html;
+      lucide.createIcons();
+    };
+
+    // ==================== HEAT & FINAL ADMIN ACTIONS ====================
+    window.generateHeatsForEvent = async (eventId, lanesPerHeat = 6) => {
+      const registered = appState.participants.filter(p => (p.eventIds || []).includes(eventId));
+      if (registered.length === 0) {
+        showToast("No athletes registered in this event yet!", "error");
+        return;
+      }
+
+      const executeGeneration = async () => {
+        // Shuffle athletes so same school athletes are spread fairly
+        const shuffled = [...registered].sort(() => Math.random() - 0.5);
+        const heats = [];
+        for (let i = 0; i < shuffled.length; i += lanesPerHeat) {
+          const slice = shuffled.slice(i, i + lanesPerHeat);
+          heats.push({
+            id: uid('heat'),
+            name: `Heat ${heats.length + 1}`,
+            entries: slice.map((p, idx) => ({
+              participantId: p.id,
+              lane: idx + 1,
+              mark: "",
+              status: ""
+            }))
+          });
+        }
+        if (!appState.rounds[eventId]) appState.rounds[eventId] = { heats: [], final: { published: false, entries: [] } };
+        appState.rounds[eventId].heats = heats;
+        await persistStateToCloud();
+        showToast(`Generated ${heats.length} balanced heat(s)!`);
+      };
+
+      if (appState.rounds[eventId]?.heats?.length > 0) {
+        askConfirmation("Regenerate Heats?", "This will overwrite existing heat lane assignments and times for this event.", executeGeneration);
+      } else {
+        await executeGeneration();
+      }
+    };
+
+    window.addEmptyHeat = async (eventId) => {
+      if (!appState.rounds[eventId]) appState.rounds[eventId] = { heats: [], final: { published: false, entries: [] } };
+      const count = appState.rounds[eventId].heats.length + 1;
+      appState.rounds[eventId].heats.push({ id: uid('heat'), name: `Heat ${count}`, entries: [] });
+      await persistStateToCloud();
+      showToast(`Added Heat ${count}`);
+    };
+
+    window.updateHeatEntry = async (eventId, heatIndex, entryIndex, field, value) => {
+      const heat = appState.rounds[eventId]?.heats?.[heatIndex];
+      if (!heat || !heat.entries[entryIndex]) return;
+      heat.entries[entryIndex][field] = value;
+      await persistStateToCloud();
+      showToast("Heat updated & synced live");
+    };
+
+    window.promoteQualifiersToFinal = async (eventId) => {
+      const heats = appState.rounds[eventId]?.heats || [];
+      const qualifiers = [];
+      heats.forEach(h => {
+        (h.entries || []).forEach(e => {
+          if (e.status === 'Q') qualifiers.push(e.participantId);
+        });
+      });
+
+      if (qualifiers.length === 0) {
+        showToast("Mark at least one athlete as 'Q (Qualify)' in Heats first.", "error");
+        return;
+      }
+
+      const existingFinal = appState.rounds[eventId]?.final?.entries || [];
+      const existingMap = new Map(existingFinal.map(fe => [fe.participantId, fe]));
+
+      const nextFinalEntries = qualifiers.map((pid, idx) => {
+        if (existingMap.has(pid)) return existingMap.get(pid);
+        return {
+          participantId: pid,
+          lane: idx + 1,
+          mark: "",
+          position: null,
+          medal: ""
+        };
+      });
+
+      appState.rounds[eventId].final = {
+        published: appState.rounds[eventId]?.final?.published || false,
+        entries: nextFinalEntries
+      };
+      await persistStateToCloud();
+      showToast(`Promoted ${qualifiers.length} qualifiers to Final!`);
+    };
+
+    window.populateDirectFinal = async (eventId) => {
+      const registered = appState.participants.filter(p => (p.eventIds || []).includes(eventId));
+      if (registered.length === 0) {
+        showToast("No athletes registered in this event yet.", "error");
+        return;
+      }
+      if (!appState.rounds[eventId]) appState.rounds[eventId] = { heats: [], final: { published: false, entries: [] } };
+      const existingMap = new Map((appState.rounds[eventId].final?.entries || []).map(fe => [fe.participantId, fe]));
+
+      appState.rounds[eventId].final.entries = registered.map((p, idx) => {
+        if (existingMap.has(p.id)) return existingMap.get(p.id);
+        return {
+          participantId: p.id,
+          lane: idx + 1,
+          mark: "",
+          position: null,
+          medal: ""
+        };
+      });
+      await persistStateToCloud();
+      showToast(`Loaded ${registered.length} athletes into Final!`);
+    };
+
+    window.updateFinalEntry = async (eventId, entryIndex, field, value) => {
+      const entries = appState.rounds[eventId]?.final?.entries;
+      if (!entries || !entries[entryIndex]) return;
+
+      if (field === 'position') {
+        const pos = value ? parseInt(value, 10) : null;
+        entries[entryIndex].position = pos;
+        entries[entryIndex].medal = pos === 1 ? 'GOLD' : pos === 2 ? 'SILVER' : pos === 3 ? 'BRONZE' : '';
+      } else {
+        entries[entryIndex][field] = value;
+      }
+      await persistStateToCloud();
+      showToast("Final result updated & synced live");
+    };
+
+    window.autoRankFinal = async (eventId) => {
+      const ev = getEvent(eventId);
+      const entries = appState.rounds[eventId]?.final?.entries || [];
+      if (!ev || entries.length === 0) return;
+
+      const parseNumericMark = (str) => {
+        if (!str) return null;
+        const cleaned = String(str).replace(/[^0-9.]/g, '');
+        const num = parseFloat(cleaned);
+        return isNaN(num) ? null : num;
+      };
+
+      const withNums = entries.map(e => ({ entry: e, val: parseNumericMark(e.mark) }));
+      const valid = withNums.filter(x => x.val !== null);
+      if (valid.length === 0) {
+        showToast("Enter numeric marks/times before auto-ranking.", "error");
+        return;
+      }
+
+      // Lower time wins for TIME; higher distance/height wins for DISTANCE
+      valid.sort((a, b) => ev.metric === 'TIME' ? a.val - b.val : b.val - a.val);
+
+      valid.forEach((item, idx) => {
+        const pos = idx + 1;
+        item.entry.position = pos;
+        item.entry.medal = pos === 1 ? 'GOLD' : pos === 2 ? 'SILVER' : pos === 3 ? 'BRONZE' : '';
+      });
+
+      // Reorder array by rank
+      const invalid = withNums.filter(x => x.val === null).map(x => x.entry);
+      appState.rounds[eventId].final.entries = [...valid.map(x => x.entry), ...invalid];
+      await persistStateToCloud();
+      showToast("Auto-ranked finalists by performance!");
+    };
+
+    window.togglePublishFinal = async (eventId) => {
+      if (!appState.rounds[eventId]?.final) return;
+      const nextState = !appState.rounds[eventId].final.published;
+      appState.rounds[eventId].final.published = nextState;
+      await persistStateToCloud();
+      showToast(nextState ? "Official Final Results Published!" : "Final Results set to Provisional");
+    };
+
+    // ==================== TAB 3: STANDINGS & ATHLETE DIRECTORY ====================
+    function renderStandingsTab() {
+      const ptsG = Number(appState.settings.ptsGold) || 5;
+      const ptsS = Number(appState.settings.ptsSilver) || 3;
+      const ptsB = Number(appState.settings.ptsBronze) || 1;
+
+      const tally = new Map();
+      appState.schools.forEach(s => {
+        tally.set(s.id, { school: s, gold: 0, silver: 0, bronze: 0, points: 0 });
+      });
+
+      appState.events.forEach(ev => {
+        const finalObj = appState.rounds[ev.id]?.final;
+        if (!finalObj || !finalObj.published) return;
+        (finalObj.entries || []).forEach(fe => {
+          const p = getParticipant(fe.participantId);
+          if (!p || !tally.has(p.schoolId)) return;
+          const row = tally.get(p.schoolId);
+          if (fe.position === 1 || fe.medal === 'GOLD') {
+            row.gold += 1;
+            row.points += ptsG;
+          } else if (fe.position === 2 || fe.medal === 'SILVER') {
+            row.silver += 1;
+            row.points += ptsS;
+          } else if (fe.position === 3 || fe.medal === 'BRONZE') {
+            row.bronze += 1;
+            row.points += ptsB;
+          }
+        });
+      });
+
+      const sortedStandings = [...tally.values()].sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.gold !== a.gold) return b.gold - a.gold;
+        if (b.silver !== a.silver) return b.silver - a.silver;
+        return b.bronze - a.bronze;
+      });
+
+      const tbody = document.getElementById('standingsTableBody');
+      if (sortedStandings.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-xs text-slate-400">No schools registered yet.</td></tr>`;
+      } else {
+        tbody.innerHTML = sortedStandings.map((row, idx) => {
+          const rankBadge = idx === 0
+            ? `<span class="w-7 h-7 rounded-lg bg-amber-400 text-slate-950 font-extrabold text-xs flex items-center justify-center">1</span>`
+            : `<span class="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center">${idx + 1}</span>`;
+          return `
+            <tr class="${idx === 0 ? 'bg-amber-50/40' : ''}">
+              <td class="py-3 pl-4 pr-2">${rankBadge}</td>
+              <td class="py-3 px-2">
+                <div class="font-bold text-slate-900 text-xs sm:text-sm">${escapeHtml(row.school.name)}</div>
+                <div class="text-[11px] text-slate-400">${escapeHtml(row.school.code)} ${row.school.zone ? `• ${escapeHtml(row.school.zone)}` : ''}</div>
+              </td>
+              <td class="py-3 px-2 text-center font-bold text-amber-600">${row.gold}</td>
+              <td class="py-3 px-2 text-center font-bold text-slate-500">${row.silver}</td>
+              <td class="py-3 px-2 text-center font-bold text-orange-700">${row.bronze}</td>
+              <td class="py-3 pl-2 pr-4 text-right font-sport text-xl font-extrabold text-emerald-700">${row.points}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      renderDirectoryList();
+    }
+
+    window.renderDirectoryList = () => {
+      const listEl = document.getElementById('athleteDirectoryList');
+      const badge = document.getElementById('directoryTotalBadge');
+      const q = (document.getElementById('directorySearchInput')?.value || '').trim().toLowerCase();
+
+      const filtered = appState.participants.filter(p => {
+        if (!q) return true;
+        const sch = getSchool(p.schoolId);
+        return (
+          p.name.toLowerCase().includes(q) ||
+          p.fatherName.toLowerCase().includes(q) ||
+          p.bib.toLowerCase().includes(q) ||
+          (p.dob || '').includes(q) ||
+          sch.name.toLowerCase().includes(q)
+        );
+      });
+
+      badge.textContent = `${filtered.length} Athletes`;
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = `<div class="py-6 text-center text-xs text-slate-400">No athletes match your search.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = filtered.map(p => {
+        const sch = getSchool(p.schoolId);
+        const grp = getGroup(p.groupId);
+        const evNames = (p.eventIds || []).map(eid => getEvent(eid)?.name).filter(Boolean).join(', ');
+        return `
+          <div class="py-3 flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="px-1.5 py-0.5 rounded bg-slate-900 text-white text-[10px] font-bold">#${escapeHtml(p.bib)}</span>
+                <span class="font-bold text-sm text-slate-900 truncate">${escapeHtml(p.name)}</span>
+              </div>
+              <div class="text-xs text-slate-600 mt-0.5">
+                Father: <strong>${escapeHtml(p.fatherName)}</strong> • DOB: <strong>${formatDob(p.dob)}</strong>
+              </div>
+              <div class="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                ${escapeHtml(sch.name)} • ${escapeHtml(grp.name)}
+              </div>
+              ${evNames ? `<div class="text-[11px] text-slate-400 mt-0.5">Events: ${escapeHtml(evNames)}</div>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    };
+
+    // ==================== ADMIN CRUD: SCHOOLS ====================
+    function renderAdminSchools() {
+      const container = document.getElementById('adminSchoolsList');
+      if (appState.schools.length === 0) {
+        container.innerHTML = `<div class="col-span-full bg-white rounded-2xl p-6 text-center text-xs text-slate-500 border border-slate-200">No schools added yet. Click "Add School" above.</div>`;
+        return;
+      }
+      container.innerHTML = appState.schools.map(s => {
+        const count = appState.participants.filter(p => p.schoolId === s.id).length;
+        return `
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[11px] font-extrabold">${escapeHtml(s.code)}</span>
+                <h4 class="font-bold text-sm text-slate-900 truncate">${escapeHtml(s.name)}</h4>
+              </div>
+              <p class="text-xs text-slate-500 mt-1">${escapeHtml(s.zone || 'General Zone')} • ${count} Athletes</p>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button onclick="openSchoolModal('${s.id}')" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+              <button onclick="deleteSchool('${s.id}')" class="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.openSchoolModal = (schoolId = null) => {
+      document.getElementById('editSchoolId').value = schoolId || '';
+      if (schoolId) {
+        const s = getSchool(schoolId);
+        document.getElementById('schoolModalTitle').textContent = "Edit School";
+        document.getElementById('schoolNameInput').value = s.name;
+        document.getElementById('schoolCodeInput').value = s.code;
+        document.getElementById('schoolZoneInput').value = s.zone || '';
+      } else {
+        document.getElementById('schoolModalTitle').textContent = "Add School";
+        document.getElementById('schoolNameInput').value = '';
+        document.getElementById('schoolCodeInput').value = '';
+        document.getElementById('schoolZoneInput').value = '';
+      }
+      openModal('schoolModal');
+    };
+
+    window.saveSchool = async () => {
+      const id = document.getElementById('editSchoolId').value;
+      const name = document.getElementById('schoolNameInput').value.trim();
+      const code = document.getElementById('schoolCodeInput').value.trim().toUpperCase();
+      const zone = document.getElementById('schoolZoneInput').value.trim();
+
+      if (!name || !code) {
+        showToast("School Name and Short Code are required.", "error");
+        return;
+      }
+
+      if (id) {
+        const idx = appState.schools.findIndex(s => s.id === id);
+        if (idx > -1) appState.schools[idx] = { id, name, code, zone };
+      } else {
+        appState.schools.push({ id: uid('sch'), name, code, zone });
+      }
+      closeModal('schoolModal');
+      await persistStateToCloud();
+      showToast("School saved & synced!");
+    };
+
+    window.deleteSchool = (id) => {
+      askConfirmation("Delete School?", "Athletes belonging to this school will remain but show 'Unknown School'.", async () => {
+        appState.schools = appState.schools.filter(s => s.id !== id);
+        await persistStateToCloud();
+        showToast("School deleted", "info");
+      });
+    };
+
+    // ==================== ADMIN CRUD: AGE GROUPS ====================
+    function renderAdminGroups() {
+      const container = document.getElementById('adminGroupsList');
+      if (appState.groups.length === 0) {
+        container.innerHTML = `<div class="col-span-full bg-white rounded-2xl p-6 text-center text-xs text-slate-500 border border-slate-200">No age groups added yet.</div>`;
+        return;
+      }
+      container.innerHTML = appState.groups.map(g => {
+        const evCount = appState.events.filter(e => e.groupId === g.id).length;
+        const pCount = appState.participants.filter(p => p.groupId === g.id).length;
+        const dobRange = (g.minDob || g.maxDob) ? `DOB: ${g.minDob || 'Any'} to ${g.maxDob || 'Any'}` : 'No DOB restriction';
+        return `
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <h4 class="font-bold text-sm text-slate-900 truncate">${escapeHtml(g.name)}</h4>
+              <p class="text-[11px] text-slate-500 mt-0.5">${dobRange}</p>
+              <p class="text-[11px] font-semibold text-emerald-700 mt-1">${evCount} Events • ${pCount} Athletes</p>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button onclick="openGroupModal('${g.id}')" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+              <button onclick="deleteGroup('${g.id}')" class="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.openGroupModal = (groupId = null) => {
+      document.getElementById('editGroupId').value = groupId || '';
+      if (groupId) {
+        const g = getGroup(groupId);
+        document.getElementById('groupModalTitle').textContent = "Edit Age Group";
+        document.getElementById('groupNameInput').value = g.name;
+        document.getElementById('groupMinDobInput').value = g.minDob || '';
+        document.getElementById('groupMaxDobInput').value = g.maxDob || '';
+      } else {
+        document.getElementById('groupModalTitle').textContent = "Add Age Group";
+        document.getElementById('groupNameInput').value = '';
+        document.getElementById('groupMinDobInput').value = '';
+        document.getElementById('groupMaxDobInput').value = '';
+      }
+      openModal('groupModal');
+    };
+
+    window.saveGroup = async () => {
+      const id = document.getElementById('editGroupId').value;
+      const name = document.getElementById('groupNameInput').value.trim();
+      const minDob = document.getElementById('groupMinDobInput').value;
+      const maxDob = document.getElementById('groupMaxDobInput').value;
+
+      if (!name) {
+        showToast("Group Name is required.", "error");
+        return;
+      }
+      if (id) {
+        const idx = appState.groups.findIndex(g => g.id === id);
+        if (idx > -1) appState.groups[idx] = { id, name, minDob, maxDob };
+      } else {
+        appState.groups.push({ id: uid('grp'), name, minDob, maxDob });
+      }
+      closeModal('groupModal');
+      await persistStateToCloud();
+      showToast("Age group saved!");
+    };
+
+    window.deleteGroup = (id) => {
+      askConfirmation("Delete Age Group?", "Events inside this group should be reassigned or removed.", async () => {
+        appState.groups = appState.groups.filter(g => g.id !== id);
+        await persistStateToCloud();
+        showToast("Group deleted", "info");
+      });
+    };
+
+    // ==================== ADMIN CRUD: EVENTS ====================
+    function renderAdminEvents() {
+      const container = document.getElementById('adminEventsList');
+      if (appState.events.length === 0) {
+        container.innerHTML = `<div class="col-span-full bg-white rounded-2xl p-6 text-center text-xs text-slate-500 border border-slate-200">No events created yet.</div>`;
+        return;
+      }
+      container.innerHTML = appState.events.map(ev => {
+        const grp = getGroup(ev.groupId);
+        const count = appState.participants.filter(p => (p.eventIds || []).includes(ev.id)).length;
+        return `
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-[11px] font-bold uppercase text-emerald-700 truncate">${escapeHtml(grp.name)}</div>
+              <h4 class="font-bold text-sm text-slate-900 truncate">${escapeHtml(ev.name)}</h4>
+              <div class="flex items-center gap-1.5 mt-1">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${ev.format === 'HEAT_AND_FINAL' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'}">
+                  ${ev.format === 'HEAT_AND_FINAL' ? 'Heat (Hit) & Final' : 'Direct Final'}
+                </span>
+                <span class="text-[11px] text-slate-400">• ${count} Athletes</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button onclick="openEventModal('${ev.id}')" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+              <button onclick="deleteEvent('${ev.id}')" class="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.openEventModal = (eventId = null) => {
+      if (appState.groups.length === 0) {
+        showToast("Please create at least one Age Group first.", "error");
+        return;
+      }
+      const grpSel = document.getElementById('eventGroupSelect');
+      grpSel.innerHTML = appState.groups.map(g => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join('');
+
+      document.getElementById('editEventId').value = eventId || '';
+      if (eventId) {
+        const ev = getEvent(eventId);
+        document.getElementById('eventModalTitle').textContent = "Edit Event";
+        grpSel.value = ev.groupId;
+        document.getElementById('eventNameInput').value = ev.name;
+        document.getElementById('eventFormatSelect').value = ev.format || 'HEAT_AND_FINAL';
+        document.getElementById('eventMetricSelect').value = ev.metric || 'TIME';
+      } else {
+        document.getElementById('eventModalTitle').textContent = "Add Athletic Event";
+        document.getElementById('eventNameInput').value = '';
+        document.getElementById('eventFormatSelect').value = 'HEAT_AND_FINAL';
+        document.getElementById('eventMetricSelect').value = 'TIME';
+      }
+      openModal('eventModal');
+    };
+
+    window.saveEvent = async () => {
+      const id = document.getElementById('editEventId').value;
+      const groupId = document.getElementById('eventGroupSelect').value;
+      const name = document.getElementById('eventNameInput').value.trim();
+      const format = document.getElementById('eventFormatSelect').value;
+      const metric = document.getElementById('eventMetricSelect').value;
+
+      if (!name || !groupId) {
+        showToast("Event Name and Group are required.", "error");
+        return;
+      }
+      if (id) {
+        const idx = appState.events.findIndex(e => e.id === id);
+        if (idx > -1) appState.events[idx] = { id, groupId, name, format, metric };
+      } else {
+        appState.events.push({ id: uid('evt'), groupId, name, format, metric });
+      }
+      closeModal('eventModal');
+      await persistStateToCloud();
+      showToast("Event saved & synced!");
+    };
+
+    window.deleteEvent = (id) => {
+      askConfirmation("Delete Event?", "All heat and final records for this event will be removed.", async () => {
+        appState.events = appState.events.filter(e => e.id !== id);
+        delete appState.rounds[id];
+        await persistStateToCloud();
+        showToast("Event deleted", "info");
+      });
+    };
+
+    // ==================== ADMIN CRUD: PARTICIPANTS (WITH FATHER NAME & DOB) ====================
+    function renderAdminParticipants() {
+      const container = document.getElementById('adminParticipantsList');
+      const q = (document.getElementById('adminParticipantSearch')?.value || '').trim().toLowerCase();
+      const grpFilter = document.getElementById('adminParticipantGroupFilter')?.value || 'ALL';
+
+      const list = appState.participants.filter(p => {
+        if (grpFilter !== 'ALL' && p.groupId !== grpFilter) return false;
+        if (!q) return true;
+        const sch = getSchool(p.schoolId);
+        return (
+          p.name.toLowerCase().includes(q) ||
+          p.fatherName.toLowerCase().includes(q) ||
+          p.bib.toLowerCase().includes(q) ||
+          sch.name.toLowerCase().includes(q)
+        );
+      });
+
+      if (list.length === 0) {
+        container.innerHTML = `<div class="py-8 text-center text-xs text-slate-400">No participants found. Click "Add Participant" to register athletes.</div>`;
+        return;
+      }
+
+      container.innerHTML = list.map(p => {
+        const sch = getSchool(p.schoolId);
+        const grp = getGroup(p.groupId);
+        const evTags = (p.eventIds || []).map(eid => {
+          const ev = getEvent(eid);
+          return ev ? `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-semibold">${escapeHtml(ev.name)}</span>` : '';
+        }).join('');
+
+        return `
+          <div class="py-3.5 flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="px-2 py-0.5 rounded bg-slate-900 text-white text-[10px] font-bold">#${escapeHtml(p.bib)}</span>
+                <span class="font-bold text-sm text-slate-900 truncate">${escapeHtml(p.name)}</span>
+              </div>
+              <div class="text-xs text-slate-600 mt-0.5">
+                Father: <strong>${escapeHtml(p.fatherName)}</strong> • DOB: <strong>${formatDob(p.dob)}</strong>
+              </div>
+              <div class="text-[11px] font-semibold text-emerald-700 mt-0.5">
+                ${escapeHtml(sch.name)} (${escapeHtml(sch.code)}) • ${escapeHtml(grp.name)}
+              </div>
+              <div class="flex flex-wrap gap-1 mt-1.5">${evTags}</div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button onclick="openParticipantModal('${p.id}')" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+              <button onclick="deleteParticipant('${p.id}')" class="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    window.openParticipantModal = (participantId = null) => {
+      if (appState.schools.length === 0 || appState.groups.length === 0) {
+        showToast("Please add at least one School and Age Group first.", "error");
+        return;
+      }
+
+      const schSel = document.getElementById('partSchoolSelect');
+      schSel.innerHTML = appState.schools.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.code)})</option>`).join('');
+
+      const grpSel = document.getElementById('partGroupSelect');
+      grpSel.innerHTML = appState.groups.map(g => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join('');
+
+      document.getElementById('editParticipantId').value = participantId || '';
+      document.getElementById('partDobWarning').classList.add('hidden');
+
+      if (participantId) {
+        const p = getParticipant(participantId);
+        document.getElementById('participantModalTitle').textContent = "Edit Athlete Details";
+        document.getElementById('partNameInput').value = p.name;
+        document.getElementById('partBibInput').value = p.bib;
+        document.getElementById('partFatherInput').value = p.fatherName;
+        document.getElementById('partDobInput').value = p.dob || '';
+        schSel.value = p.schoolId;
+        grpSel.value = p.groupId;
+        renderParticipantEventCheckboxes(p.groupId, p.eventIds || []);
+      } else {
+        document.getElementById('participantModalTitle').textContent = "Register New Athlete";
+        document.getElementById('partNameInput').value = '';
+        document.getElementById('partBibInput').value = String(101 + appState.participants.length);
+        document.getElementById('partFatherInput').value = '';
+        document.getElementById('partDobInput').value = '';
+        renderParticipantEventCheckboxes(grpSel.value, []);
+      }
+      openModal('participantModal');
+    };
+
+    window.onParticipantModalGroupChange = () => {
+      const grpId = document.getElementById('partGroupSelect').value;
+      renderParticipantEventCheckboxes(grpId, []);
+      validateParticipantDobWarning();
+    };
+
+    function renderParticipantEventCheckboxes(groupId, selectedIds = []) {
+      const box = document.getElementById('partEventsCheckboxes');
+      const groupEvents = appState.events.filter(e => e.groupId === groupId);
+      if (groupEvents.length === 0) {
+        box.innerHTML = `<div class="col-span-full text-xs text-slate-400 py-2">No events created for this group yet.</div>`;
+        return;
+      }
+      box.innerHTML = groupEvents.map(ev => {
+        const checked = selectedIds.includes(ev.id) ? 'checked' : '';
+        return `
+          <label class="flex items-center gap-2 p-2 rounded-lg bg-white border border-slate-200 cursor-pointer text-xs font-medium text-slate-800">
+            <input type="checkbox" name="partEventCheck" value="${ev.id}" ${checked} class="w-4 h-4 accent-emerald-600 rounded" />
+            <span class="truncate">${escapeHtml(ev.name)}</span>
+          </label>
+        `;
+      }).join('');
+    }
+
+    window.validateParticipantDobWarning = () => {
+      const grpId = document.getElementById('partGroupSelect').value;
+      const dob = document.getElementById('partDobInput').value;
+      const warnEl = document.getElementById('partDobWarning');
+      const grp = getGroup(grpId);
+      if (!dob || !grp || (!grp.minDob && !grp.maxDob)) {
+        warnEl.classList.add('hidden');
+        return;
+      }
+      if ((grp.minDob && dob < grp.minDob) || (grp.maxDob && dob > grp.maxDob)) {
+        warnEl.textContent = `Age Notice: Selected DOB (${dob}) is outside ${grp.name}'s configured range (${grp.minDob || 'Any'} to ${grp.maxDob || 'Any'}).`;
+        warnEl.classList.remove('hidden');
+      } else {
+        warnEl.classList.add('hidden');
+      }
+    };
+
+    window.saveParticipant = async () => {
+      const id = document.getElementById('editParticipantId').value;
+      const name = document.getElementById('partNameInput').value.trim();
+      const bib = document.getElementById('partBibInput').value.trim().toUpperCase();
+      const fatherName = document.getElementById('partFatherInput').value.trim();
+      const dob = document.getElementById('partDobInput').value;
+      const schoolId = document.getElementById('partSchoolSelect').value;
+      const groupId = document.getElementById('partGroupSelect').value;
+      const eventIds = [...document.querySelectorAll('input[name="partEventCheck"]:checked')].map(cb => cb.value);
+
+      if (!name || !bib || !fatherName || !dob || !schoolId || !groupId) {
+        showToast("Please fill Athlete Name, Bib #, Father's Name, DOB, School & Group.", "error");
+        return;
+      }
+
+      const payload = {
+        id: id || uid('part'),
+        bib,
+        name,
+        fatherName,
+        dob,
+        schoolId,
+        groupId,
+        eventIds
+      };
+
+      if (id) {
+        const idx = appState.participants.findIndex(p => p.id === id);
+        if (idx > -1) appState.participants[idx] = payload;
+      } else {
+        appState.participants.push(payload);
+      }
+
+      closeModal('participantModal');
+      await persistStateToCloud();
+      showToast("Participant saved & synced!");
+    };
+
+    window.deleteParticipant = (id) => {
+      askConfirmation("Remove Participant?", "This athlete will be removed from the roster.", async () => {
+        appState.participants = appState.participants.filter(p => p.id !== id);
+        await persistStateToCloud();
+        showToast("Participant removed", "info");
+      });
+    };
+
+    // ==================== ADMIN SETTINGS & BACKUP ====================
+    function populateSettingsForm() {
+      document.getElementById('settingMeetTitle').value = appState.settings.meetTitle || '';
+      document.getElementById('settingMeetSubtitle').value = appState.settings.meetSubtitle || '';
+      document.getElementById('settingAdminPin').value = appState.settings.adminPin || '1234';
+      document.getElementById('settingPtsGold').value = appState.settings.ptsGold ?? 5;
+      document.getElementById('settingPtsSilver').value = appState.settings.ptsSilver ?? 3;
+      document.getElementById('settingPtsBronze').value = appState.settings.ptsBronze ?? 1;
+    }
+
+    window.saveMeetSettings = async () => {
+      const meetTitle = document.getElementById('settingMeetTitle').value.trim() || "INTER-SCHOOL ATHLETICS";
+      const meetSubtitle = document.getElementById('settingMeetSubtitle').value.trim();
+      const adminPin = document.getElementById('settingAdminPin').value.trim() || "1234";
+      const ptsGold = parseInt(document.getElementById('settingPtsGold').value, 10) || 5;
+      const ptsSilver = parseInt(document.getElementById('settingPtsSilver').value, 10) || 3;
+      const ptsBronze = parseInt(document.getElementById('settingPtsBronze').value, 10) || 1;
+
+      appState.settings = { meetTitle, meetSubtitle, adminPin, ptsGold, ptsSilver, ptsBronze };
+      await persistStateToCloud();
+      showToast("Championship settings saved!");
+    };
+
+    window.loadSampleDataConfirm = () => {
+      askConfirmation(
+        "Load Demo Competition Data?",
+        "This will populate sample Schools, Age Groups, Events, Participants (with Father's Name & DOB), Heats, and Final results.",
+        async () => {
+          appState = createDemoCompetitionState();
+          await persistStateToCloud();
+          showToast("Demo championship data loaded!");
+        }
+      );
+    };
+
+    window.exportCompetitionJson = () => {
+      const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `athletics-meet-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Competition backup exported!");
+    };
+
+    // ==================== BOOTSTRAP APP ====================
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      initCloudSync();
+    });
+  </script>
+</body>
+</html>
